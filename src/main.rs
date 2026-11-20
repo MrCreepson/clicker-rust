@@ -292,6 +292,16 @@ impl Backend {
     }
 
     #[qslot]
+    fn is_running_val(&self) -> bool {
+        self.is_running.load(Ordering::Relaxed)
+    }
+
+    #[qslot]
+    fn capture_mode_val(&self) -> u8 {
+        self.capture_mode.load(Ordering::SeqCst)
+    }
+
+    #[qslot]
     fn toggle_clicker(&self) {
         let new_state = !self.is_running.load(Ordering::Relaxed);
         self.is_running.store(new_state, Ordering::Relaxed);

@@ -27,6 +27,8 @@ ApplicationWindow {
     property string statusMessage: "Gotowy"
     property int interval_ms: 60
     property bool clickerActive: false
+    property int currentCaptureMode: 0
+    property bool blinkPhase: true
 
     function refreshKeyLabels() {
         currentClickCode = Backend.click_key_code_val()
@@ -38,6 +40,26 @@ ApplicationWindow {
         Backend.init_worker()
         Backend.set_interval_ms(root.interval_ms)
         refreshKeyLabels()
+    }
+
+    Timer {
+        id: statusSyncTimer
+        interval: 150
+        repeat: true
+        running: true
+        onTriggered: {
+            const runningNow = Backend.is_running_val()
+            const modeNow = Backend.capture_mode_val()
+
+            root.clickerActive = runningNow
+            root.currentCaptureMode = modeNow
+
+            if (modeNow !== 0) {
+                root.blinkPhase = !root.blinkPhase
+            } else {
+                root.blinkPhase = true
+            }
+        }
     }
 
     Timer {
@@ -72,6 +94,23 @@ ApplicationWindow {
 
         ColumnLayout {
             anchors.top: parent.top
+
+            // Status bulb
+            Label {
+                id: statusBulb
+                text: "⬤"
+                padding: 5
+                color: {
+                    if (root.currentCaptureMode !== 0) {
+                        return root.blinkPhase ? "#f5c451" : "#3a2e12"
+                    }
+                    return root.clickerActive ? "#6ee7a8" : "#ef5350"
+                }
+
+                Behavior on color {
+                    ColorAnimation { duration: 250 }
+                }
+            }
 
             // Row 1
             RowLayout {
