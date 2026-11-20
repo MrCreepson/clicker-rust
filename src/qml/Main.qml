@@ -24,11 +24,14 @@ ApplicationWindow {
 
     property int currentClickCode: 272
     property int currentListenCode: 276
-    property string statusMessage: "Gotowy"
+    property string statusMessage: "Ready"
     property int interval_ms: 60
     property bool clickerActive: false
     property int currentCaptureMode: 0
     property bool blinkPhase: true
+
+    property string hotkeyDevice: NaN
+    property string captureDevice: NaN
 
     function refreshKeyLabels() {
         currentClickCode = Backend.click_key_code_val()
@@ -43,7 +46,7 @@ ApplicationWindow {
     }
 
     Timer {
-        id: statusSyncTimer
+        id: syncTimer
         interval: 150
         repeat: true
         running: true
@@ -51,8 +54,14 @@ ApplicationWindow {
             const runningNow = Backend.is_running_val()
             const modeNow = Backend.capture_mode_val()
 
+            const hotkeyDeviceNow = Backend.hotkey_device_val()
+            const captureDeviceNow = Backend.capture_device_val()
+
             root.clickerActive = runningNow
             root.currentCaptureMode = modeNow
+
+            root.hotkeyDevice = hotkeyDeviceNow
+            root.captureDevice = captureDeviceNow
 
             if (modeNow !== 0) {
                 root.blinkPhase = !root.blinkPhase
@@ -214,7 +223,7 @@ ApplicationWindow {
 
                     onClicked: {
                         Backend.set_listen_device_to_selected()
-                        statusMessage = "Hotkey dev ustawiony na: " + deviceCombo.currentText
+                        statusMessage = "Hotkey dev set to: " + deviceCombo.currentText
                     }
                 }
             }
@@ -264,7 +273,7 @@ ApplicationWindow {
                     onClicked: {
                         Backend.toggle_clicker()
                         root.clickerActive = !root.clickerActive
-                        statusMessage = root.clickerActive ? "Clicker aktywny (" + root.interval_ms + " ms)" : "Clicker zatrzymany"
+                        statusMessage = root.clickerActive ? "Clicker active (" + root.interval_ms + " ms)" : "Clicker stopped"
                     }
                 }
 
@@ -299,7 +308,7 @@ ApplicationWindow {
                                 if (!isNaN(val) && val >= 1) {
                                     root.interval_ms = val
                                     Backend.set_interval_ms(val)
-                                    statusMessage = "Interwał: " + val + " ms"
+                                    statusMessage = "Interval: " + val + " ms"
                                 } else {
                                     text = "" + root.interval_ms
                                 }
@@ -344,7 +353,7 @@ ApplicationWindow {
                     }
 
                     onClicked: {
-                        capturePopup.modeText = "Przycisk klikania"
+                        capturePopup.modeText = "Clicking button"
                         capturePopup.open()
                         Backend.arm_capture_click_key_code()
                     }
@@ -388,24 +397,67 @@ ApplicationWindow {
         }
 
         // Row 3
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 24
-            radius: 6
-            color: "#3d0b0e0d"
-            border.width: 1
-            border.color: "#22ffffff"
+        ColumnLayout {
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 24
+                radius: 6
+                color: "#3d0b0e0d"
+                border.width: 1
+                border.color: "#22ffffff"
 
-            Label {
-                anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-                verticalAlignment: Text.AlignVCenter
-                text: statusMessage
-                color: root.textMuted
-                font.pixelSize: 11
-                font.family: "JetBrains Mono"
-                elide: Text.ElideRight
+                Label {
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    verticalAlignment: Text.AlignVCenter
+                    text: "Capture device: " + root.captureDevice
+                    color: root.textMuted
+                    font.pixelSize: 11
+                    font.family: "JetBrains Mono"
+                    elide: Text.ElideRight
+                }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 24
+                radius: 6
+                color: "#3d0b0e0d"
+                border.width: 1
+                border.color: "#22ffffff"
+
+
+                Label {
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    verticalAlignment: Text.AlignVCenter
+                    text: "Hotkey Device: " + root.hotkeyDevice
+                    color: root.textMuted
+                    font.pixelSize: 11
+                    font.family: "JetBrains Mono"
+                    elide: Text.ElideRight
+                }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 24
+                radius: 6
+                color: "#3d0b0e0d"
+                border.width: 1
+                border.color: "#22ffffff"
+
+                Label {
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    verticalAlignment: Text.AlignVCenter
+                    text: statusMessage
+                    color: root.textMuted
+                    font.pixelSize: 11
+                    font.family: "JetBrains Mono"
+                    elide: Text.ElideRight
+                }
             }
         }
     }
@@ -438,7 +490,7 @@ ApplicationWindow {
             enabled: capturePopup.opened
             onActivated: {
                 Backend.cancel_capture()
-                statusMessage = "Anulowano przechwytywanie"
+                statusMessage = "Capture canceled"
                 capturePopup.close()
             }
         }
@@ -447,14 +499,14 @@ ApplicationWindow {
             spacing: 6
 
             Label {
-                text: "Nasłuchiwanie: " + capturePopup.modeText
+                text: "Listening: " + capturePopup.modeText
                 color: root.accent
                 font.bold: true
                 font.pixelSize: 13
             }
 
             Label {
-                text: "Wciśnij klawisz lub przycisk myszy (Esc = anuluj)..."
+                text: "Press mouse or keboard button (Esc = cance)..."
                 color: root.textPrimary
                 font.pixelSize: 12
             }

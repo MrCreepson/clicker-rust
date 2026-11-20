@@ -30,6 +30,22 @@ fn set_device_nonblocking(dev: &Device, nonblocking: bool) -> std::io::Result<()
     Ok(())
 }
 
+fn format_device_label(path: &PathBuf) -> String {
+    let found_name = enumerate()
+        .find(|(p, _)| p == path)
+        .and_then(|(_, dev)| dev.name().map(str::to_owned));
+
+    let name = match found_name {
+        Some(n) => n,
+        None => Device::open(path)
+            .ok()
+            .and_then(|dev| dev.name().map(str::to_owned))
+            .unwrap_or_else(|| "Nieznane urządzenie".to_string()),
+    };
+
+    format!("{name} ({})", path.display())
+}
+
 fn open_nonblocking_device(path: &PathBuf) -> Option<Device> {
     match Device::open(path) {
         Ok(dev) => {
@@ -294,6 +310,19 @@ impl Backend {
     #[qslot]
     fn is_running_val(&self) -> bool {
         self.is_running.load(Ordering::Relaxed)
+    }
+
+    #[qslot]
+    fn hotkey_device_val(&self) -> String {
+        let path = self.listen_device_path.lock().unwrap().clone();
+        format_device_label(&path)
+
+    }
+
+    #[qslot]
+    fn capture_device_val(&self) -> String {
+        let path = self.capture_device_path.lock().unwrap().clone();
+        format_device_label(&path)
     }
 
     #[qslot]
